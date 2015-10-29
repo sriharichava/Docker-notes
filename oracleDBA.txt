@@ -1,0 +1,27 @@
+Database Buffer Cache
+The Database Buffer Cache is a fairly large memory object that stores the actual data blocks that are retrieved from datafiles by system
+queries and other data manipulation language commands..
+
+There are three buffer states:
+·        Unused - a buffer is available for use - it has never been used or is currently unused.
+·        Clean - a buffer that was used earlier - the data has been written to disk.
+·        Dirty - a buffer that has modified data that has not been written to disk.
+
+
+Each buffer has one of two access modes:
+·        Pinned - a buffer is pinned so it does not age out of memory.
+·        Free (unpinned).
+
+ 
+KEEP Buffer Pool:
+This pool retains blocks in memory (data from tables) that are likely to be reused throughout daily processing.  
+An example might be a table containing user names and passwords or a validation table of some type.
+The DB_KEEP_CACHE_SIZE parameter sizes the KEEP Buffer Pool.
+
+RECYCLE Buffer Pool
+
+This pool is used to store table data that is unlikely to be reused throughout daily processing – 
+thus the data blocks are quickly removed from memory when not needed.
+
+The DB_RECYCLE_CACHE_SIZE parameter sizes the Recycle Buffer Pool. 
+
