@@ -1,0 +1,149 @@
+Docker Image:
+there are two types of images:
+1. Images created by Docker Inc (ubuntu)
+2. Users Uploaded Images  (srihari/testimage)
+
+1. Listing Images.
+	docker images
+$ docker images
+REPOSITORY       TAG      IMAGE ID      CREATED      VIRTUAL SIZE
+training/webapp  latest   fc77f57ad303  3 weeks ago  280.5 MB
+ubuntu           13.10    5e019ab7bf6d  4 weeks ago  180 MB
+ubuntu           saucy    5e019ab7bf6d  4 weeks ago  180 MB
+ubuntu           12.04    74fe38d11401  4 weeks ago  209.6 MB
+
+.............
+Create container form Image: (Creating container from exact version of Image) Bset Practice
+
+docker run -it ubuntu:14.04 /bin/bash
+
+If we run the container like below it will generate container from latest ubuntu version
+
+docker run -it ubuntu /bin/bash
+
+Getting new Image:
+
+docker pull centos
+
+Run container from fetched Image:
+
+$ docker run -t -i centos /bin/bash
+bash-4.1#
+
+Finding images:
+Finding Images from 2 ways.
+1.Search in docker hub
+2.docker search <keyword>       Command line
+
+Example:
+$ docker search sinatra
+NAME                                   DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+training/sinatra                       Sinatra training image                          0                    [OK]
+marceldegraaf/sinatra                  Sinatra test app                                0
+mattwarren/docker-sinatra-demo                                                         0                    [OK]
+luisbebop/docker-sinatra-hello-world                                                   0                    [OK]
+bmorearty/handson-sinatra              handson-ruby + Sinatra for Hands on with D...   0
+subwiz/sinatra                                                                         0
+bmorearty/sinatra                                                                      0
+
+..........
+Pulling our Image:
+docker pull training/sinatra
+
+$ docker run -t -i training/sinatra /bin/bash
+root@a8cb6ce02d85:/#
+
+Creating our own images:
+Creating own images by 2 ways.
+
+1. We can update a container created from an image and commit the results to an image.
+2. We can use a Dockerfile to specify instructions to create an image
+--------------------------------------------------------------
+Updating and committing an image (Method 1):
+
+#Create Image from base Image
+$ docker run -t -i training/sinatra /bin/bash
+root@0b2616b0e5a8:/#
+
+#Install required packages / Changes
+root@0b2616b0e5a8:/# gem install json
+
+Now change Done.
+Now Commit the Image:
+-m --Comment
+-a Author
+
+docker commit -m "Added json gem" -a "Kate Smith" 0b2616b0e5a8 ouruser/sinatra:v2
+
+$ docker images
+REPOSITORY          TAG     IMAGE ID       CREATED       VIRTUAL SIZE
+training/sinatra    latest  5bc342fa0b91   10 hours ago  446.7 MB
+ouruser/sinatra     v2      3c59e02ddd1a   10 hours ago  446.7 MB
+ouruser/sinatra     latest  5db5f8471261   10 hours ago  446.7 MB
+
+
+Now new Image is listing in the images list.
+
+Now Run new container from newly created Image.
+
+docker run -it ouruser/sinatra:v2 /bin/bash
+root@78e82f680994:/#
+
+------------------------------------------------------
+Building an image from a Dockerfile  (Best Practice to create Dockerfile in empty directory and run)
+
+$ mkdir sinatra
+$ cd sinatra
+$ touch Dockerfile
+
+Sample Dockerfile:
+
+# This is a comment
+FROM ubuntu:14.04
+MAINTAINER Srihari Chava <srihari@gmail.com>
+RUN apt-get update && apt-get install -y ruby ruby-dev
+RUN gem install sinatra
+
+
+Run the Docker File:
+
+$ docker build -t ouruser/sinatra:v2 .
+
+We can then create a container from our new image.
+The -i flag starts an interactive container. The -t flag creates a pseudo-TTY that attaches stdin and stdout.
+
+$ docker run -t -i ouruser/sinatra:v2 /bin/bash
+root@8196968dac35:/#
+
+Setting tags on an image
+
+$ docker tag 5db5f8471261 ouruser/sinatra:devel
+
+$ docker images ouruser/sinatra
+REPOSITORY          TAG     IMAGE ID      CREATED        VIRTUAL SIZE
+ouruser/sinatra     latest  5db5f8471261  11 hours ago   446.7 MB
+ouruser/sinatra     devel   5db5f8471261  11 hours ago   446.7 MB
+ouruser/sinatra     v2      5db5f8471261  11 hours ago   446.7 MB
+
+
+Push Image to DockerBub:
+
+$ docker push ouruser/sinatra
+The push refers to a repository [ouruser/sinatra] (len: 1)
+Sending image list
+Pushing repository ouruser/sinatra (3 tags)
+. . .
+
+Remove an image from the host
+
+$ docker rmi training/sinatra
+Untagged: training/sinatra:latest
+Deleted: 5bc342fa0b91cabf65246837015197eecfa24b2213ed6a51a8974ae250fedd8d
+Deleted: ed0fffdcdae5eb2c3a55549857a8be7fc8bc4241fb19ad714364cbfd7a56b22f
+Deleted: 5c58979d73ae448df5af1d8142436d81116187a7633082650549c52c3a2418f0
+
+
+
+
+
+

@@ -1,0 +1,264 @@
+For Checking Container Logs:
+docker logs <container name>              -> View the logs of container pid 1 process
+docker logs -f <container name>           -> View and follow the output
+
+See the last line of the log and follow from that.
+docker logs -f --tail 1 <container name>
+
+Container Application Logs:
+Typically Apps have well defined log location.
+Map lo host folder to the Application's log folder in the container
+in this way you can view the log generated in the container from your host folder.
+
+Command:
+docker run -d -P -v /nginxlogs:/var/log/nginx nginx
+
+In above command running a container using nginx image and mapping log location of the container(/var/log/nginx) to the host's nginxlogs(/nginxlogs) directory.
+
+Docker Inspect:
+Will display all details about a container
+display all results in json format.
+use grep to find specific property.
+
+Get full details of Container:
+docker inspect <container name>
+
+Get the IP address of the Container:
+docker inspect <container name> | grep IPAddress
+
+Get specific property from json format :
+
+docker@ubuntu:~$ docker inspect --format {{.NetworkSettings.IPAddress}} modest_almeida
+172.17.0.11
+-------------------------------------------------------------------------------------------
+Starting and Stopping Docker daemon:
+
+sudo service docker stop
+sudo service docker stop
+sudo docker service restart
+
+Run docker service in daemon mode.
+
+sudo docker -d &
+
+Kill process of docker:
+Find pid of dockdocker@ubuntu:~$ pidof docker
+2454
+Kill process of docker:
+sudo kill ${pidof docker} 
+
+
+Docker Configuratio file:
+/etc/default/docker
+User DOCKER_OPTS to control the startup options when docker running as a service.
+Restart the docker service to take changes effect:
+sudo docker service restart
+
+DOCKER_OPS="--log-level debug --insecure-registry myserver.org:5000"
+
+Use DOCKER_OPS for enable loglevel, allow you to access unsecure registry
+
+Start the docker daemon with --log-level and specify the logging level
+Levals Are:
+debug
+info
+warn
+Error
+Fatal
+
+Run docker command with debug log:
+sudo docker -d --log-level debug
+
+Configuring in DOCKER_OPS (Log written in /var/log/upstart/docker.log)
+DOCKER_OPTS="--log-level debug"
+
+Exercise:
+sudo service docker stop     or
+sudo kill $(pidof docker)             Both for stopping docker service
+
+Start docker service with debug log mode:
+sudo docker -d --log-level debug
+
+Now running every command will give the output with Log
+Sample:
+docker@ubuntu:~$ docker ps
+DEBU[0014] Calling GET /containers/json                 
+INFO[0014] GET /v1.20/containers/json                   
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+docker@ubuntu:~$ docker ps -a
+------------------------------------------------------------------------------------------------------------------------------
+Security
+
+Linux Containers and Security:
+  1. Docker helps make applications safer as it provides a reduced set of privileges and capabilities. 
+  2.Namespace provides a isolated view of the system.Each container Contains:
+		--IPC, network stack and root filesystem Etc
+  3.Processes running in one container cannot see of effect processes in another container.
+  4.control groups(Cgroups) isolate usage per container
+	-Ensures that a compromised cant bring down the entire host by exhausting resources.
+	
+Quick Security Considerations:
+1.Docker daemon run as root
+2.Only ensure that trusted users can control the docker daemon
+	-watch who you added to docker group.
+3.If binding the daemon to a TCP socket , Secure it with TLS
+4.Use Linux hardening solution:
+	-Apparmor
+	-SELinux
+	-GRSEC
+	
+http://www.slideshare.net/jpetazzo/docker-linux-containers-lxc-and-security
+https://docs.docker.com/articles/security/
+
+------------------------------------------------------------------------------------
+Private Registry
+-Allows you to run your own registry instead of using docker bub
+-Multiple options
+	-Run registry server using container
+	-Docker Hub Enterprise
+-Two versions
+	-Registry V1.0 for Docker 1.5 and below
+	-Registry V2.0 for docker 1.6
+
+Run the registry server inside a container	
+Registry Image:
+https://hub.docker.com/r/library/registry/
+Image contains a pre configured version of registry 2.0
+
+Command:
+docker run -d -p 5000:5000 registry:2.0
+
+Push and Pull Image from the Docker Registry:
+First tag the image with host IP or domain of the registry server , then run 
+docker push
+
+Tag Image and specify the host:
+docker tag <image ID> myserver.net:5000/my-app:1.0
+
+Push the Image to docker hub:
+docker push  myserver.net:5000/my-app:1.0
+
+Pull the Image:
+docker pull  myserver.net:5000/my-app:1.0
+
+While doing from the pull command we will get the error when we run command lie below:
+docker pull 107.108.3.22:5000/my-app:1.0
+
+For overcoming this we have 2 ways:
+1. Adding the domain in TLS
+2. Allow access to insecure server in target server (Where image is pulling)
+  Process for Allowing access to insecure server:
+	-sudo service docker stop
+	-copy the registry server URL (107.108.3.22:5000)
+	-sudo nano /etc/default/docker
+	Un comment the line & add like below:
+	DOCKER_OPTS="--insecure-registry 107.108.3.22:5000"
+	save and exit
+	sudo docker start 
+	check the service is running is running with required flag
+	For Eg:
+	/usr/bin/docker -d --insecure-registry 107.108.3.22:5000
+	
+Now try again to pull the image from the local configured registry Server:
+docker pull 107.108.3.22:5000/my-app:1.0
+
+Will work promptly.
+If we push the image also from newhost also it will work :
+process:
+docker pull nginx               -> pull the image from docker hub registry
+docker tag nginx 107.108.3.22:5000/mynginx:1.0
+docker push 107.108.3.22:5000/mynginx:1.0
+
+Now pull the mynginx:1.0 from our host:
+docker pull localhost:5000/mynginx:1.0
+
+Pull will complete successfully , because this image mynginx:1.0 pushed from different host.
+
+How to check image in regsitry:
+curl -v -X GET http://localhost:5000/v2/mynginx/tags/list
+
+https://github.com/docker/distribution
+http://docs.docker.com/registry/
+
+------------------------------------------------------------------------------------------------------------
+Docker machine:
+Docker machine is a tool that automatically provisions docker hosts and installs docker engine on them
+   -Create additional hosts on your computer
+   -create hosts on cloud providers (AWS, Digital Ocean....)
+   -Machine Creates server, installs docker and configures docker client
+ 
+Download the binary:
+https://github.com/docker/machine/releases
+
+Place the binary intoa folder of your choice
+Add the folder into the system Environment PATH 
+Exercise:
+docker@ubuntu:~$ wget https://github.com/docker/machine/releases/download/v0.4.0/docker-machine_linux-amd64
+docker@ubuntu:~$ mv docker-machine_linux-amd64 docker-machine
+docker@ubuntu:~$ sudo mv docker-machine /usr/local/bin/
+[sudo] password for docker: 
+docker@ubuntu:~$ echo $PATH
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+docker@ubuntu:~$ cd /usr/local/bin/
+docker@ubuntu:/usr/local/bin$ ls | grep docker
+docker-machine
+docker@ubuntu:/usr/local/bin$ sudo chmod 775 docker-machine 
+docker@ubuntu:/usr/local/bin$ cd
+docker@ubuntu:~$ docker-machine -v
+docker-machine version 0.4.0 (9d0dc7a)
+docker@ubuntu:~$ 
+
+Crating Host on Local server with VirtualBox:
+docker-machine create --driver virtualbox testhost
+
+Create Host on Cloud:
+docker-machine create 
+	  --driver digitalocean \
+	  --digitalocean-access-token <your access token> \
+	  --digitalocean-size 2gb \
+	  testhost
+
+For Clould based on service provides command will change:
+Reference:
+http://docs.docker.com/machine/drivers/
+
+Create docker machine in Digital Ocean:
+docker-machine create --driver digitalocean --digitalocean-access-token <your access token> host3
+
+Listing docker machines:
+docke-machine ls
+
+Docker machine SSH:
+Allowed us to connect to a provisioned host using SSH
+Logs in using the SSH key that is created when creating the machine
+
+docker-machine ssh host3
+------------------------------------------------------------------------------------------------------------------------------------
+Docker Swarm:
+Docker swarm is a tool that clusters docker hosts and schedules containers.
+	-Turns a pool of host machines into a single virtual host
+	-Ships with simple Scheduling backend
+	-Supports many discovery backends
+	   -hosted discovery
+	   -etcd
+	   -consul
+	   -zookeeper
+	   -static files
+	   
+Documentation:
+http://docs.docker.com/swarm/discovery/
+
+	  
+
+
+
+
+
+
+
+
+
+ 
+
+
+

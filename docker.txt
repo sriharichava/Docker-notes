@@ -1,0 +1,140 @@
+Docker 1
+
+For VM's you need to install guest operating system , need allocate separate physical memory and CPU
+
+In Containers :
+
+For every application you need to maintain separate containers:
+in that containers have to install required program for application.
+
+For Eg:
+if we have 3 applications need to run or differenrt java versions or different JVM 
+need to configure the java/jvm version in the containers
+
+Containers Vs VM
+
+Light weight than VM's
+no need to install guest OS
+Less Ram , CPU and storage
+More containers per machine than VM
+Grater portability
+
+----------------------------------
+Docker Engine is the program that enables containers to be built shipped and Run
+Docker kernal uses linux kernal namespaces and control goups
+namespaces give the isolatedworkspace
+
+For Installing Docker:
+wget -qO- https://get.docker.com/ | sh
+
+Test:
+sudo docker run hello-world
+
+Add user to the Docker group: (Specify the docker group add user(johnnytu) to that group)
+
+sudo usermod -aG docker johnnytu
+
+
+Logout and Login as the User: (No need to use Sudo after adding group)
+docker run hello-world
+
+----------------------------------------------------------------------------
+Docker client and Daemon
+
+Both maintain client/server architecture
+client take user input and send it to daemon
+daemon builds , runs and distribute to containers
+Client and daemon runs on same hosts or different hosts
+CLI client and GUI(kitematic)
+
+docker version:
+sudo docker version
+Output:
+Client version
+server version(Daemon)
+
+-----------------------------------------------------------------------------
+Images:
+Readonly template used to create containers 
+built by you or other docker users
+stored in docker hub or local registry
+
+In image there is set of instructions like what programs to install what files to create , what volumes to manage , what ports to use
+
+
+Containers:
+Isolated application platform
+contains everything to run your application
+based on one or more images
+
+
+----------------------------------------------------------------------
+
+Registry (Eg : Docker Hub)
+
+Registry Contain multiple repos
+Each Repo Contain multiple images of different versions of OS )(for eg ubuntu)
+Docker Hub is the public registry that contains a large number of images available for use
+
+___________________________________________________________
+
+Docker Orchestration:
+Docker Machine: Tool that provisions docker hosts and installs the docker engine on them
+Docker swarm: Toll that clusters many engines and schedules containers
+Doocker Compose: tool to create multi container applications
+
+--------------------------------------------------------------------
+To create Container :
+sudo docker run
+Here we have to mention repositery:tag
+docker run ubuntu:14.04  echo ""hello world"
+	This time will download the image from the internet
+docker run ubuntu:14.04 ps ax
+	This time image already downloaded in the local PC so it will give the reply promptly
+	
+-i  tells docker to stdin to the computer
+-o  tells docker to get pseudo terminal
+
+docker run -i -t ubuntu:14.04 /bin/bash
+
+It will create the container cd you to that container , there you can create users and install programs
+user which is created in one container is usuable in same container only
+
+Run a Container and get terminal Access 
+1. Create container using ubuntu 14.04 and connect to stdin and a termainal
+docker run -i -t ubuntu:14.04 /bin/bash
+/bin/bash is mandatory
+
+this will create contaier and take you to that container
+2/ create a user in that container
+adduser srihari
+3.add user to that group
+add srihari sudo
+4.exit the container
+exit
+
+Check the container shutdown or not
+sudo docker run -i -t ubuntu:14.04 /bin/bash
+
+su srihari 
+cmmand will throw the error bcoz this user srihari is not existed in ths container
+One more check you can do  in /etc/passwd
+
+Stop the container from termainal : ctrl+p+Q
+
+-----------------------------------------------------------
+List all the containers:
+docker ps       -> List the running containers
+docker ps -a    -> List all the containers include all stopped too
+
+Running Docker in detached Mode: (Running docker in background or daemon)
+
+docker run -d centos:7 ping 127.0.0.1 -c 50
+  
+docker process run until the ping completes
+
+So to run a webservice like apache we use daemon or background mode
+
+docker run -d -P tomcat:7
+
+

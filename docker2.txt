@@ -1,0 +1,452 @@
+Docker 2
+Building Images:
+Docker Image is Containing of multiple layers
+ each layer is a another image
+
+ Writiable Container
+	|^
+ Add Apache (Image) 
+	|^
+Add emacs (Image)
+	|^
+Base Image(Debian)
+  |^
+Kernal 
+
+If you want to change something in the Apache configuration , it wont allow you do in the image.
+you have to change in the writiable layer (your old version is still present and hidden)
+You have to made your changes in the read/write container and commit
+
+Docker Commit: -> Command save changes in a container to a docker image
+docker commit [options] [container id] [repositery:tag]
+
+Sample :
+docker commit 984d25f537c5 johnnytu/myapplication:1.0
+
+johnnytu --username
+myapplication  -- Application name
+
+Exercise:
+docker run -it ubuntu:14.04 bash
+
+Check for curl
+johnnytu@<containerid>#curl  
+will throw a error that command not found
+johnnytu@<containerid># apt-get install -y curl 
+
+Will install curl to our container
+
+exit   --> Exit to the container
+
+docker ps -a 
+will list of containers running
+
+docker commit <containerid> johnnytu/myapp:1.0
+
+List docker Images:
+
+docker images
+
+will list your new saved Image
+
+--------------
+Running the container:
+docker images                     -> will list the Images
+docker run -it johnnytu/myapp:1.0 bash                 -> running the container with new image
+which curl                                             -> we installed curl in our image so it will list the curl location
+/usr/bin/curl
+
+Verifying Docker commit Image:
+
+sudo docker inspect jamtur01/apache2:webserver
+
+------------------------------------------------------------------------------------------------
+dockerfile
+dockerfile is a configuration file that contains that contains instructions for building docker image.
+provides more effective way to build images compared to using docker commit
+
+dockerfile specify what to do when building image
+
+FROM instruction specifies the what the base image should be
+RUN instruction specify the command to execute
+
+sample dockerfile:
+
+#comment 
+FROM ubuntu:14.04
+RUN apt-get install vim
+RUN apt-get install curl
+
+Each RUN instruction will execute the command on the top writeable layer  and commit of the image
+can aggregate multiple RUN with &&
+RUN apt-get update && apt-get install -y \
+	curl \
+	vim \
+	openjdk-7-jdk
+	
+Each run command will execute on top writeable layer and commit the image, it will be used to the RUN instruction in the docker file
+
+docker Build:
+
+docker build [options] [path]
+docker build -t [repositery:tag] [path]
+
+Path -> Build context
+any files to copy those mentioned in the docker context
+
+Examples:
+docker build johnnytu/myapp:1.0 .                 -> Mentioning current directory as the path
+docker build johnnytu/myapp:1.0 myproject		  -> Mentioning myproject directory as the path
+
+
+Exercise:
+mkdir test
+cd test
+nano Dockerfile
+Adding below contect in docker File:
+-------------------------------
+FROM ubuntu:14.04
+RUN apt-get update -y
+RUN apt-get install -y curl
+RUN apt-get install -y vim
+
+-----------------------------------
+Save & close
+
+Running the Build:
+docker build johnnytu/newapp:1.0 .
+
+CMD defines a default command to execute whena container created
+CMD performs no action during the image build
+shell format and EXEC format
+can only be specified in dockerfile
+
+Example docker file after Adding CMD
+----------------------------------
+FROM ubuntu:14.04
+RUN apt-get update -y
+RUN apt-get install -y curl \
+							vim
+CMD ["ping" , "127.0.0.1" , "-c" ,"30"]
+-------------------
+Same last line you can put like below too
+CMD ping 127.0.0.1 -c 30
+
+If nothing is changed in the dockerfile RUN instruction , build will be cached from old image
+
+docker run johnnytu/myapp:1.1
+o/p sample:
+pint -t 127.0.0.1 time=2ms
+
+will execute the content from the docker file
+If i run command like below, it will overwrite the dockerfile cmd content:
+
+docker run johnnytu/myapp:1.1 echo "hello world"
+o/p:
+hello world
+------------------------------
+ENTRYPOINT Defines the command when a container executed.
+
+difference between CMD & ENTRYPOINT  in dockerfile is 
+CMD arguments will overwrite when something passed as arguments in container run.
+ENTRYPOINT will not overwrite
+
+Shell & EXEC form
+EXEC for is preferred bcoz shell is not accept arguments in runtime
+-----------------------------------
+Exercise for ENTRYPOINT:
+open docker file and modify as  below:
+FROM ubuntu:14.04
+RUN apt-get update -y
+RUN apt-get install -y curl \
+							vim
+ENTRYPOINT ["ping"]
+
+save & close
+docker buid -t 	johnnytu/newapp:1.3 
+
+Run:
+docker run 	johnnytu/newapp:1.3
+
+Will prompt a message that you did not supplied as any argument for "ping" {Which is mentioned in the dockerfile ENTRYPOINT}
+ 				
+docker run 	johnnytu/newapp:1.3 127.0.0.1 -c 5
+
+Now container will run properly with ping results.
+----------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------
+Managing Images and Containers:
+
+Find containers by name:
+docker ps            -> list running containers
+docker ps -a 		-> list all containers
+docker start <container ID>
+docker stop  <container ID>
+
+Exercise:
+docker run -d ngnix 
+<will show long ID>
+docker ps 
+will list the containers running
+docker stop <container ID>
+docker ps                       o/p: no results
+docker ps -a                           will list our container with container ID\
+docker start <container ID>            will start the container
+------------------------------------
+Docker Exec:
+dockre exec command to start another process within a container
+execute /bin/bash to execute a shell
+sample command:
+docker exec -i -t <container ID> /bin/bash
+existing from terminal will not exit from container.
+
+Exercise:
+docker run -d tomcat:7
+docker ps                -> will give the list and container ID
+docker exec -it <container ID> bash
+
+root@<container ID>:/usr/local/tomcat#
+root@<container ID>#ps -ef				-> will list the running processes there it will list the tomcat service as the pid 1
+root@<container ID>#exit                -> Exit the terminal not the container.
+ root@<container ID>#docker ps			-> list the container
+ 
+ -------------------------------------------------------------
+ Delete Container:
+ docker rm
+ 
+ Exercise:
+ docker run -d tomcat:7
+ docker ps    -> will list the process
+ docker stop <container ID /Name>
+ docker ps -a     -> Our container will list in the stopped containers
+ docker rm <container ID /Name>
+ docker ps -a 	    -> no containers to list
+ 
+ -----------------------------------------------------------------------
+ Delete Images
+Command: docker rmi
+
+sample:
+docker rmi johnnytu/testuimage:1.1
+untagged imageand deleted image
+docker rmi <image ID>
+------------------------------------------------------------------
+Docker Push:
+docker push [repo:tag]
+docker push sriharichava/srihari_repo:1.1
+
+Local repo must have the same name and tag as the docker hub repo.
+
+docker tag    ->command to rename a local image repositery before pushing to docker hub
+
+docker tag <image-id>  sriharichava/srihari_repo2:1.1                    -> Example by using Image ID to tag
+docker tag johnnytu/myapp:1.3 sriharichava/srihari_repo2 				 -> Example by using local tag to Hub Repo
+
+---------------------------------------------------------------------------------------------------------------------------------------
+Docker Volumes:
+A volume is a designated directory in a container,which is designed to persist data independent of containers lifecycle
+
+Volumes are mounted when creating a container
+can be mapped to a host or registry
+volume path specified must be absolute
+
+if you delete the container also , the volume can be shared with another container too.
+
+Execute a new container and mount the folder /mycolume to the filesystem :
+docker run -d -p -v /myvolume ngnix:1.7
+
+Execute a new container and map the /data/src folder from host to /test/src 
+
+docker run -it -v /data/src:/test/src ngnix:1.7
+
+Mount the file System as readonly:
+
+docker run -it -v /data/src:ro ngnix:1.7
+
+File to File:
+docker run -it -v ~/.bash_history:/.bash_history ngnix:1.7
+
+Get Volumes from different Container:
+docker run -it --name new_Image --volumes-from john1 myimage 
+
+Kill all the Running Containers:
+docker kill $(docker ps -q)
+
+Remove all the containers:
+docker rm $(docker ps -aq)
+
+Specify Volumes in Dockerfile
+
+VOLUME instruction creates a mount point
+we can specify arguments in json or string
+cannot map volumes to host directories
+volumes are initialized when a container executed
+
+
+String Example:
+VOLUME /myvolume
+
+String example with multiple volumes:
+VOLUME /www/website1.com /www/website1.com
+
+JSON Example:
+VOLUME ["myvol" , "myvol2"]
+
+Use of VOLUMEs:
+De-couple the data that is stored from the container which created the data
+Good for data sharing between containers   
+	Can setup a data container which has a volume you mount in other containers
+mounting folders from host is good for test purpose only, but not recommended in the production purpose.
+
+Exercise:
+docker run -d -P -v /www/website1 ngnix
+<will give long output>
+docker exec -it <a portion of o/p> bash
+root@<a portion of o/p>#ls
+www directory will be there.
+root@<Container ID>#cd www/website1
+root@<Container ID>#echo "hello world" > test
+root@<Container ID>#ls
+test
+
+docker stop <Container ID>
+
+commit the docker image:
+docker commit <Container ID> test:1.0 
+
+Now create a container from the committed image:
+docker run -it test:1.0 bash
+root@<New Container ID>#cd /www/website1
+root@<New Container ID>#ls
+
+Now you cant get the test file which saved in the volume, because Volume changes are excluded when updating a image
+-----------------------------------------------------------------------------------------------------------------------------------------
+Container Networking Basics:
+
+Recall : Every container have their own network and Ip Address
+If i install ngnix server inside  container , i cant access that directly.
+because container IP is not accessable outside.
+So we have to map the host port to the container port.
+
+There is 2 options for Port mapping:
+-p &  -P
+-p we have to mention the port mapping Like below:
+
+sample:
+docker run -d -p 8080:80 ngnix:1.7
+
+Here we are mapping our ngnix service container port 80 to the 8080 port in the host.
+
+From Browser:
+http://<host IP>:8080
+we can access ngnix server.
+
+-P automatically maps the ports.
+host port numbers used to go from 49153 to 65535
+Only work for the ports defined in the EXPOSE Instruction.
+
+Example:
+docker run -d -P ngnix:1.7
+
+Sample Dockerfile with EXPOSE Instruction:
+-------------------------------------
+FROM ubuntu:14.04
+RUN apt-get update
+RUN apt-get install -y nginx
+EXPOSE 80 443
+CMD["nginx" , "-g" ,"daemon off;"]
+----------------------------------
+
+----------------------------------------------------------------------------------------------------------
+Linking Containers:
+linking is a communication method between containers which allows them to securely transfer data from one to another
+	-Source and recipient containers
+	-Recipient containers have access on source containers
+	-Links are established based on container names
+	
+webapp		--->	database
+container			container
+(Recipient)			(Source)
+			Host
+			
+in the above image webapp and database are 2 containers on same host
+
+Creating Link:
+1.Create Source container first.
+2.Create recipient container and use -link option
+
+Example:
+docker run -d --name database postgres								-> Creating Source container
+docker run -d -P --name website --link database:db nginx    		-> Creating recipient container and linking
+
+In command 2 database is the name of the source container , db is the alias 
+
+Exercise:
+
+docker run -d --name dbms postgres
+docker run -it -P --name website --link dbms:db ubuntu:14.04 bash
+root@<Container ID>#cat /etc/hosts
+172.17.0.72		db 
+
+Exit
+This IP also listed in your hosts file.
+
+For Confirmation Check in source container details:
+docker inspect dbms | grep IPAddress
+O/P : IPAddress: "172.17.0.72"
+
+Uses of Linking:
+1.Containers can talk to each other without have expose ports to hosts
+2.Essential for microservice Application architecture
+for Eg:
+	1.container with MYSQL Running
+	2.container with TOMCAT Running.
+	3.Application on tomcat need to contat with mysql
+	
+--------------------------------------------------------
+Docker in Continuous Integration:
+
+ user commit code to repositery , trigger build -> on CI server (Compile, test , package) -> deploy in App server
+ 
+Using Docker in CI:
+Repo ---> CI Server (Build Image for Compile, test, and package) --> Image will pushed to docker hub
+From other host (QA, test enviroment) pull the docker image and run the container 
+
+Docker Hub Auto build:
+
+ 
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

@@ -1,0 +1,216 @@
+Docker can build images automatically by reading the instructions from a Dockerfile.
+A Dockerfile is a text document that contains all the commands you would normally execute manually in order to build a Docker image.
+By calling docker build from your terminal, you can have Docker build your image step by step, executing the instructions successively.
+
+Best Practice to create Docker file in a empty directory.
+Dont create Docker file in / and Run Because:
+The docker build command will use whatever directory contains the Dockerfile as the build context (including all of its subdirectories).
+The build context will be sent to the Docker daemon before building the image, which means if you use / as the source repository, 
+the entire contents of your hard drive will get sent to the daemon (and thus to the machine running the daemon). You probably don’t want that.
+
+.dockerignore File:
+Docker excludes files or directories relative to PATH that match these exclusion patterns
+
+Example .dockerignore File:
+	*/temp*
+    */*/temp*
+    temp?
+    *.md
+    !LICENSE.md
+	
+*/temp*  	--Exclude all files with names starting withtemp in any subdirectory below the root directory. For example, a file named/somedir/temporary.txt is ignored
+*/*/temp*   --Exclude files starting with name temp from any subdirectory that is two levels below the root directory. For example, the file /somedir/subdir/temporary.txt is ignored.
+temp?       --Exclude the files that match the pattern in the root directory. For example, the files tempa, tempb in the root directory are ignored.
+*.md		--Exclude all markdown files in the root directory.
+!LICENSE.md --Exception to the Markdown files exclusion is this file, LICENSE.md, Include this file in the build.
+
+Dockerdile Instruction Format:
+
+Enviroment variable:
+FROM busybox
+ENV foo /bar
+WORKDIR ${foo}   # WORKDIR /bar
+ADD . $foo       # ADD . /bar
+COPY \$foo /quux # COPY $foo /quux
+
+FROM:         Getting Base Image for building IMage
+Can call the command in below ways:
+FROM <image>
+FROM <image>:<tag>
+FROM <image>@<digest>
+
+MAINTAINER:     instruction allows you to set the Author field of the generated images.
+MAINTAINER <name>
+
+RUN:
+Can call the command in below ways:
+
+RUN <command> (the command is run in a shell - /bin/sh -c - shell form)
+RUN ["executable", "param1", "param2"] (exec form)
+
+The RUN instruction will execute any commands in a new layer on top of the current image and commit the results. 
+The resulting committed image will be used for the next step in the Dockerfile.
+
+To use a different shell, other than ‘/bin/sh’, use the exec form passing in the desired shell. 
+For example, RUN ["/bin/bash", "-c", "echo hello"]
+
+CMD:
+The CMD instruction has three forms:
+
+    CMD ["executable","param1","param2"] (exec form, this is the preferred form)
+    CMD ["param1","param2"] (as default parameters to ENTRYPOINT)
+    CMD command param1 param2 (shell form)
+
+CMD [ "sh", "-c", "echo", "$HOME" ]
+
+LABEL:
+LABEL <key>=<value> <key>=<value> <key>=<value> ...
+The LABEL instruction adds metadata to an image. 
+A LABEL is a key-value pair. To include spaces within a LABEL value, use quotes and backslashes as you would in command-line parsing.
+
+Example:
+LABEL com.example.label-with-value="foo"
+LABEL version="1.0"
+LABEL description="This text illustrates \
+that label-values can span multiple lines."
+
+Docker recommends combining labels in a single LABEL instruction where possible
+Each LABEL instruction produces a new layer which can result in an inefficient image if you use many labels
+Ex:
+LABEL multi.label1="value1" multi.label2="value2" other="value3"
+
+To view an image’s labels, use the docker inspect command.
+
+EXPOSE:
+The EXPOSE instructions informs Docker that the container will listen on the specified network ports at runtime.
+Docker uses this information to interconnect containers using links
+EXPOSE <port> [<port>...]
+EXPOSE 80 443
+
+ENV:
+The ENV instruction sets the environment variable <key> to the value <value>
+
+ENV myName John Doe
+ENV myDog Rex The Dog
+ENV myCat fluffy
+
+ADD:
+The ADD instruction copies new files, directories or remote file URLs from <src> and adds them to the filesystem of the container at the path <dest>.
+ADD has two forms:
+
+    ADD <src>... <dest>
+    ADD ["<src>",... "<dest>"] (this form is required for paths containing whitespace)
+
+Ex:
+ADD hom* /mydir/        # adds all files starting with "hom"
+ADD hom?.txt /mydir/    # ? is replaced with any single character
+
+The <dest> is an absolute path, or a path relative to WORKDIR, into which the source will be copied inside the destination container.
+
+COPY:
+The COPY instruction copies new files or directories from <src> and adds them to the filesystem of the container at the path <dest>.
+COPY has two forms:
+
+    COPY <src>... <dest>
+    COPY ["<src>",... "<dest>"] (this form is required for paths containing whitespace)
+Ex:
+COPY hom* /mydir/        # adds all files starting with "hom"
+COPY hom?.txt /mydir/    # ? is replaced with any single character
+
+COPY test aDir/  
+
+ENTRYPOINT:
+An ENTRYPOINT allows you to configure a container that will run as an executable.
+
+ENTRYPOINT has two forms:
+
+    ENTRYPOINT ["executable", "param1", "param2"] (the preferred exec form)
+    ENTRYPOINT command param1 param2 (shell form)
+
+VOLUME:
+
+VOLUME ["/data"]
+Eg:
+FROM ubuntu
+RUN mkdir /myvol
+RUN echo "hello world" > /myvol/greeting
+VOLUME /myvol
+
+USER:
+The USER instruction sets the user name or UID to use when running the image and for any RUN, 
+CMD and ENTRYPOINT instructions that follow it in the Dockerfile
+Eg:
+
+USER daemon
+
+WORKDIR:
+The WORKDIR instruction sets the working directory for any RUN, CMD, ENTRYPOINT, COPY and ADD instructions that follow it in the Dockerfile.
+Eg:
+WORKDIR /path/to/workdir
+
+WORKDIR /a
+WORKDIR b
+WORKDIR c
+RUN pwd
+
+ENV DIRPATH /path
+WORKDIR $DIRPATH/$DIRNAME
+
+ONBUILD:
+Eg:
+ONBUILD ADD . /app/src
+ONBUILD RUN /usr/local/bin/python-build --dir /app/src
+
+Dockerfile examples:
+----------------------------------------------------------------------------------------
+# Nginx
+#
+# VERSION               0.0.1
+
+FROM      ubuntu
+MAINTAINER Victor Vieux <victor@docker.com>
+
+LABEL Description="This image is used to start the foobar executable" Vendor="ACME Products" Version="1.0"
+RUN apt-get update && apt-get install -y inotify-tools nginx apache2 openssh-server
+
+# Firefox over VNC
+#
+# VERSION               0.3
+
+FROM ubuntu
+
+# Install vnc, xvfb in order to create a 'fake' display and firefox
+RUN apt-get update && apt-get install -y x11vnc xvfb firefox
+RUN mkdir ~/.vnc
+# Setup a password
+RUN x11vnc -storepasswd 1234 ~/.vnc/passwd
+# Autostart firefox (might not be the best way, but it does the trick)
+RUN bash -c 'echo "firefox" >> /.bashrc'
+
+EXPOSE 5900
+CMD    ["x11vnc", "-forever", "-usepw", "-create"]
+
+# Multiple images example
+#
+# VERSION               0.1
+
+FROM ubuntu
+RUN echo foo > bar
+# Will output something like ===> 907ad6c2736f
+
+FROM ubuntu
+RUN echo moo > oink
+# Will output something like ===> 695d7793cbe4
+
+# You᾿ll now have two images, 907ad6c2736f with /bar, and 695d7793cbe4 with
+# /oink.
+
+------------------------------------------------------------------------------------------------------------------
+
+	
+
+
+
+
+
+
