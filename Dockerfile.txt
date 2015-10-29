@@ -1,6 +1,7 @@
 Docker can build images automatically by reading the instructions from a Dockerfile.
 A Dockerfile is a text document that contains all the commands you would normally execute manually in order to build a Docker image.
 By calling docker build from your terminal, you can have Docker build your image step by step, executing the instructions successively.
+---------------------------------------------------------------------------------------
 
 Best Practice to create Docker file in a empty directory.
 Dont create Docker file in / and Run Because:
